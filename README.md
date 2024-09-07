@@ -30,8 +30,8 @@ Instagram Media Extractor is a web-based application built with Flask that allow
     ```
 4. Open your browser and navigate to `http://127.0.0.1:5000`.
 
-## Screenshots
-Include some screenshots of the app running to give users a visual overview.
+## Screenshot
+![Instagram Media Extractor Screenshot](dashboard.png)
 
 ## Future Improvements
 - Bulk download all media with a single click.
