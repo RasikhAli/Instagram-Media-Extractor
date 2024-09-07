@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Media Extractor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .col-md-4{
+            width: 20%;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+        .card-img-top {
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            height: 200px;
+            object-fit: cover;
+        }
+        .card-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .media-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+        .card-text {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .btn {
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(145deg, #007bff, #0056b3);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(145deg, #0056b3, #00408c);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+        }
+        .btn-success {
+            background: linear-gradient(145deg, #28a745, #1e7e34);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn-success:hover {
+            background: linear-gradient(145deg, #1e7e34, #155d27);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+        }
+        .btn-secondary {
+            background: linear-gradient(145deg, #6c757d, #5a6268);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn-secondary:hover {
+            background: linear-gradient(145deg, #5a6268, #4e5d6b);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+        }
+        .profile-img {
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border: 3px solid #007bff;
+        }
+        .profile-info {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .profile-info h3 {
+            margin-top: 10px;
+            font-size: 1.4rem;
+            color: #007bff;
+        }
+        .profile-info p {
+            margin-top: 5px;
+            color: #6c757d;
+        }
+        .profile-header {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .form-control {
+            border-radius: 30px;
+            border: 1px solid #ced4da;
+            padding: 15px;
+        }
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-4">
+        <h1 class="text-center mb-4">Instagram Media Extractor</h1>
+        <form id="fetchForm" method="POST" class="my-3">
+            <div class="mb-3">
+                <input type="text" class="form-control" id="username" name="username" placeholder="Enter Instagram Username" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Fetch Media</button>
+        </form>
+
+        <!-- <button id="downloadAll" class="btn btn-success mb-3">Download All Media</button> -->
+
+        <div id="profile" class="profile-header"></div>
+        <div id="post-info" class="text-center my-4"></div>
+        <div id="media-container" class="row row-cols-1 row-cols-md-3 g-4 justify-content-center"></div>
+        <div id="loading" class="loading"></div>
+    </div>
+
+    <script>
+        document.getElementById('fetchForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            if (username) {
+                fetchMedia(username);
+            }
+        });
+
+        document.getElementById('downloadAll').addEventListener('click', function () {
+            const username = document.getElementById('username').value;
+            if (username) {
+                window.location.href = `/download_all/${encodeURIComponent(username)}`;
+            }
+        });
+
+        function fetchMedia(username) {
+            const eventSource = new EventSource(`/fetch_media?username=${encodeURIComponent(username)}`);
+
+            eventSource.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+
+                if (data.profile) {
+                    const encodedUrl = encodeURIComponent(data.profile.profile_picture);
+                    document.getElementById('profile').innerHTML = `
+                        <div class="text-center">
+                            <img src="/proxy_image?url=${encodedUrl}" class="profile-img" alt="Profile Picture">
+                            <h3>${data.profile.name} (${data.profile.username})</h3>
+                            <p>Followers: ${data.profile.followers}</p>
+                        </div>
+                    `;
+                }
+
+
+
+                if (data.media) {
+                    addMediaCard(data.media);
+                }
+
+                if (data.post_info) {
+                    // Update the post count display in real-time
+                    document.getElementById('post-info').innerHTML = `
+                        <p>Loaded Posts: ${data.post_info.posts_loaded} / ${data.post_info.total_posts}</p>
+                    `;
+                }
+
+                if (data.error) {
+                    alert('Error fetching media: ' + data.error);
+                    eventSource.close();
+                }
+            };
+
+
+            eventSource.onerror = function () {
+                eventSource.close();
+            };
+        }
+
+
+        function addMediaCard(media) {
+            const container = document.getElementById('media-container');
+            const card = document.createElement('div');
+            card.className = 'col-md-4 my-3';
+            
+            let mediaContent;
+            if (media.filename.endsWith('.mp4')) {
+                mediaContent = `
+                    <video controls class="card-img-top" alt="Media">
+                        <source src="static/${media.filename}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                `;
+            } else {
+                mediaContent = `
+                    <img src="static/${media.filename}" class="card-img-top" alt="Media">
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="card">
+                    ${mediaContent}
+                    <div class="card-body">
+                        <h5 class="card-title media-title">${media.title}</h5>
+                        <p class="card-text">Date: ${media.date}</p>
+                        <a href="${media.url}" target="_blank" class="btn btn-secondary">View Original</a>
+                        <a href="/download/${media.filename}" class="btn btn-success">Download</a>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+    </script>
+</body>
+</html>
